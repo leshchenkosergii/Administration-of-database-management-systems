@@ -31,17 +31,24 @@ $$
                 number = columns.attnum;
                 name = columns.attname;
                 id_type = columns.atttypid;
-	   
+	   	
                 select typname into type from pg_catalog.pg_type where oid = id_type;
+		if columns.attnotnull then
+                    type = type || ' NOT NULL';
+                end if;			
+                select format('%-3s %-16s %-6s %s', number, name, 'Type   :', type) into result;
+                raise notice '%', result;
+		
 		constr_conkey = '{' || number || '}';
 	        select conname into constr_name from pg_constraint where conrelid = id_table;
 		select oid into constr_oid from pg_constraint where conrelid = id_table and constr_conkey = conkey::text and contype = 'c';
 	        select * into constr_check from pg_get_constraintdef(constr_oid);
-	        constr = constr_name || ' ' || constr_check;
-				
-                select format('%-3s %-16s %-6s %s', number, name, 'Type   :', type) into result;
-                raise notice '%', result;
-	        select format('%-20s %-8s %s', '|', 'Constr :', constr) into result;
+	        constr = constr_name || ' ' || constr_check;		
+		if constr is NULL then
+		    constr = 'NO';
+		end if;
+		select format('%-20s %-8s %s', '|', 'Constr :', constr) into result;
+		
 	        raise notice '%', result;
             end loop;
 	    end if;
